@@ -164,8 +164,7 @@ function defineTasks(config) {
 
     gulp.task(names.tdd, [
         names.copyNpm,
-        names.bundleDev,
-        names.testDev,
+        names.bundleTest,
         names.serve,
         names.watchTest
     ]);
