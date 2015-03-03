@@ -135,7 +135,7 @@ function defineTasks(config) {
     gulp.task(names.concatBuild, [names.bundleDev], function() {
         gulp.src(paths.concat.concat([paths.dest.dist + "/" + paths.dest.out.build]))
             .pipe(concat(paths.dest.out.concated))
-            .pipe(gulp.dest(paths.public));
+            .pipe(gulp.dest(paths.dest.public));
     });
 
     gulp.task(names.testDev, function(cb) {
@@ -158,7 +158,7 @@ function defineTasks(config) {
         sequence(
             names.copyNpm,
             names.makeProd,
-            names.bundelProd,
+            names.bundleProd,
             names.concatBuild,
             cb
         );
