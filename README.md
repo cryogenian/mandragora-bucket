@@ -1,2 +1,3 @@
 # mandragora-bucket
-Gulp goodness for PureScript.
+bunch of gulp tasks and npm dependencies for purescript-projects
+
