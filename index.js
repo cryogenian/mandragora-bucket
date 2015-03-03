@@ -104,7 +104,7 @@ function defineTasks(config) {
         var pats = nameGetter.files(
             paths.src, paths.dest.dist + "/" + paths.dest.npm);
         var bundle = function() {
-            return builder
+            return bundler
                 .transform(istanbullify(pats), {global: true})
                 .bundle()
                 .pipe(source(paths.dest.out.test))
