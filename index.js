@@ -38,7 +38,7 @@ function defineTasks(config) {
         var modules = nameGetter.modules(paths.src);
         runnerFactory.test("test.js", "Test.Main", modules, paths.dest.dist);
     });
-    gulp.task(names.runner, ["base-runner", "test-runner"]);
+    gulp.task(names.runner, [names.baseRunner, names.testRunner]);
     gulp.task(names.docs, function() {
         var docgen = purescript.pscDocs();
         errorHandler(docgen);
@@ -91,13 +91,13 @@ function defineTasks(config) {
         };
     };
 
-    gulp.task(names.bundleDev, [names.makeDev],
+    gulp.task(names.bundleDev, [names.runner, names.makeDev],
               bundleIt("./" + paths.dest.entry.build));
 
-    gulp.task(names.bundleProd, [names.makeProd],
+    gulp.task(names.bundleProd, [names.runner, names.makeProd],
               bundleIt("./" + paths.dest.dist + "/" + paths.dest.out.build));
 
-    gulp.task(names.bundleTest, [names.makeDev], function() {
+    gulp.task(names.bundleTest, [names.runner, names.makeDev], function() {
         var bundler = br({
             entries: ["./" + paths.dest.entry.test]
         });
@@ -128,66 +128,43 @@ function defineTasks(config) {
         }, cb);
     });
 
-    gulp.task(names.cover, function() {
+    gulp.task(names.cover, [names.karma], function() {
         gulp.src("./coverage/**/lcov.info")
             .pipe(coveralls());
     });
-    gulp.task(names.concatBuild, [names.bundleDev], function() {
+    gulp.task(names.concatBuild, function() {
         gulp.src(paths.concat.concat([paths.dest.dist + "/" + paths.dest.out.build]))
             .pipe(concat(paths.dest.out.concated))
             .pipe(gulp.dest(paths.dest.public));
     });
 
-    gulp.task(names.testDev, function(cb) {
-        sequence(
-            names.makeDev,
-            names.bundleTest,
-            cb
-        );
-    });
-    gulp.task(names.test, function(cb) {
-        sequence(
-            names.copyNpm,
-            names.runner,
-            names.testDev,
-            names.karma,
-            names.cover
-        );
-    });
-    gulp.task(names.prod, function(cb) {
-        sequence(
-            names.copyNpm,
-            names.makeProd,
-            names.bundleProd,
-            names.concatBuild,
-            cb
-        );
-    });
-    gulp.task(names.compileDev, [names.runner, names.makeDev, names.bundleDev]);
+
+    gulp.task(names.test, [names.copyNpm, names.bundleTest, names.cover]);
+    gulp.task(names.prod, [names.copyNpm, names.bundleProd, names.concatBuild]);
 
     gulp.task(names.watchDev, function() {
         gulp.watch(
             paths.src.concat(paths.test),
-            [names.compileDev, names.concatBuild, names.docs]
+            [names.bundleDev]
         );
     });
     gulp.task(names.watchTest, function() {
         gulp.watch(
             paths.src.concat(paths.test),
-            [names.testDev]
+            [names.bundleTest]
         );
     });
     gulp.task(names.dev, [
         names.copyNpm,
-        names.runner,
-        names.compileDev,
+        names.bundleDev,
         names.concatBuild,
         names.serve,
         names.watchDev
     ]);
+
     gulp.task(names.tdd, [
         names.copyNpm,
-        names.runner,
+        names.bundleDev,
         names.testDev,
         names.serve,
         names.watchTest
