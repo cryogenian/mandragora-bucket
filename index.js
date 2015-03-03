@@ -21,7 +21,8 @@ var defaults = require("./lib/defaults.js"),
     serve = require("./lib/serve.js");
 
 function defineTasks(config) {
-    var paths = _.extend(defaults.paths, config.paths),
+    if (config === undefined) config = {};
+    var paths = _.extend(defaults.paths, config.paths ? config.paths : {}),
         names = _.mapObject(defaults.names, function(val, key) {
             if (config.prefix) {
                 return prefix + val;

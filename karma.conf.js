@@ -5,7 +5,7 @@ module.exports = function(config) {
       reporters: ["progress", "coverage"],
       logLevel: config.LOG_INFO,
       files: [
-          "./dist/testBundle.js"
+          "../../dist/testBundle.js"
 
       ],
       coverageReporter: {
