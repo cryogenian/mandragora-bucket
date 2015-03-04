@@ -8,6 +8,7 @@ module.exports = function(config) {
           "../../dist/testBundle.js"
 
       ],
+      browserNoActivityTimeout: 300000,
       coverageReporter: {
           dir: "../../coverage",
           subdir: "."
