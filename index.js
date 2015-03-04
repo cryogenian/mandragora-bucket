@@ -129,7 +129,7 @@ function defineTasks(config) {
     });
 
     gulp.task(names.cover, [names.karma], function() {
-        gulp.src("./coverage/**/lcov.info")
+        gulp.src("../../coverage/**/lcov.info")
             .pipe(coveralls());
     });
     gulp.task(names.concatBuild, function() {
@@ -139,7 +139,9 @@ function defineTasks(config) {
     });
 
 
-    gulp.task(names.test, [names.copyNpm, names.bundleTest, names.cover]);
+    gulp.task(names.test, [names.copyNpm], function(cb) {
+        sequence(names.bundleTest, names.cover, cb);
+    });
     gulp.task(names.prod, [names.copyNpm, names.bundleProd, names.concatBuild]);
 
     gulp.task(names.watchDev, function() {
