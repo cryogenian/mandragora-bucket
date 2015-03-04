@@ -1,6 +1,6 @@
 {
   "name": "mandragora-bucket",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "description": "Bunch of gulp tasks for purescript projects",
   "main": "index.js",
   "scripts": {
