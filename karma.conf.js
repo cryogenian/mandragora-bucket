@@ -9,7 +9,7 @@ module.exports = function(config) {
 
       ],
       coverageReporter: {
-          dir: "coverage",
+          dir: "../../coverage",
           subdir: "."
           
           ,reporters: [

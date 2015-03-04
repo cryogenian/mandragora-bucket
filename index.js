@@ -129,7 +129,7 @@ function defineTasks(config) {
     });
 
     gulp.task(names.cover, [names.karma], function() {
-        gulp.src("./coverage/**/lcov.info")
+        gulp.src("../../coverage/**/lcov.info")
             .pipe(coveralls());
     });
     gulp.task(names.concatBuild, function() {
