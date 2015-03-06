@@ -138,16 +138,22 @@ function defineTasks(config) {
             .pipe(gulp.dest(paths.dest.public));
     });
 
+    gulp.task(names.buildDev, function(cb) {
+        sequence(names.bundleDev, names.concatBuild, cb);
+    });
+    gulp.task(names.buildProd, function(cb) {
+        sequence(names.bundleProd, names.concatBuild, cb);
+    });
 
     gulp.task(names.test, [names.copyNpm], function(cb) {
         sequence(names.bundleTest, names.cover, cb);
     });
-    gulp.task(names.prod, [names.copyNpm, names.bundleProd, names.concatBuild]);
+    gulp.task(names.prod, [names.copyNpm, names.buildProd]);
 
     gulp.task(names.watchDev, function() {
         gulp.watch(
             paths.src.concat(paths.test),
-            [names.bundleDev]
+            [names.buildDev]
         );
     });
     gulp.task(names.watchTest, function() {
@@ -158,8 +164,7 @@ function defineTasks(config) {
     });
     gulp.task(names.dev, [
         names.copyNpm,
-        names.bundleDev,
-        names.concatBuild,
+        names.buildDev,
         names.serve,
         names.watchDev
     ]);
