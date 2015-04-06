@@ -1,182 +1,198 @@
-var _ = require("underscore"),
-    gulp = require("gulp"),
+var fs = require("fs"),
+    path = require("path"),
+    _ = require("underscore"),
     purescript = require("gulp-purescript"),
     concat = require("gulp-concat"),
-    sequence = require("run-sequence"),
-    rename = require("gulp-rename"),
+
     coveralls = require("gulp-coveralls"),
-    
     br = require("browserify"),
     source = require("vinyl-source-stream"),
     buffer = require("vinyl-buffer"),
-
     karma = require("karma").server;
 
-
-var defaults = require("./lib/defaults.js"),
-    runnerFactory = require("./lib/runner.js"),
+var entryFactory = require("./lib/entry-factory.js"),
     errorHandler = require("./lib/handle-error.js"),
     nameGetter = require("./lib/get-names.js"),
     istanbullify = require("./lib/istanbullify.js"),
-    serve = require("./lib/serve.js");
+    indir = require("./lib/indir.js");
 
-function defineTasks(config) {
-    if (config === undefined) config = {};
-    var paths = _.extend(defaults.paths, config.paths ? config.paths : {}),
-        names = _.mapObject(defaults.names, function(val, key) {
-            if (config.prefix) {
-                return prefix + val;
-            }
-            return val;
+
+function defineTasks(gulp, config) {
+    var paths = config.paths,
+        bundleIt = function(entry, target) {
+            return function() {
+                var bundler = br({
+                    entries: [entry]
+                });
+                var bundle = function() {
+                    console.log("!");
+                    return bundler
+                        .bundle()
+                        .pipe(source(target))
+                        .pipe(buffer())
+                        .pipe(gulp.dest(config.tmpDir));
+            };
+                return bundle();
+            };
+        },
+        getName = function(key) {
+            return key.toLowerCase().replace(".", "-");
+        };
+    
+    gulp.task("entries", function() {
+        _(config.entries).mapObject(function(val, key) {
+            entryFactory.make(key, config.tmpDir);
         });
-
-    gulp.task(names.serve, serve());
-    gulp.task(names.baseRunner, function() {
-        runnerFactory.main();
-    });
-    gulp.task(names.testRunner, function() {
         var modules = nameGetter.modules(paths.src);
-        runnerFactory.test("test.js", "Test.Main", modules, paths.dest.dist);
+        entryFactory.make("Test.Main", config.tmpDir, modules);
     });
-    gulp.task(names.runner, [names.baseRunner, names.testRunner]);
-    gulp.task(names.docs, function() {
+
+    gulp.task("docs", function() {
         var docgen = purescript.pscDocs();
         errorHandler(docgen);
-        return gulp.src(paths.docs.src)
+        return gulp.src(paths.src)
             .pipe(docgen)
             .pipe(gulp.dest(paths.docs.dest));
     });
-    gulp.task(names.psci, function() {
+    gulp.task("psci", function() {
         gulp.src(
             paths.src.concat(paths.bower).concat(paths.test)
         ).pipe(purescript.dotPsci({}));
     });
-    gulp.task(names.copyNpm, function() {
-        return gulp.src(["node_modules/**/*"])
-            .pipe(gulp.dest(paths.dest.dist + "/" + paths.dest.npm));
+    gulp.task("link", function() {
+        var stats = fs.lstatSync("./" + config.tmpDir + "/node_modules");
+        if (stats.isSymbolicLink()) return;
+        else {
+            indir(config.tmpDir, function() {
+                fs.symlinkSync(path.resolve("./node_modules"),
+                               path.resolve("./" + config.tmpDir + "/node_modules"));
+            });
+        }
     });
-    gulp.task(names.makeProd, function() {
-        var psc = purescript.psc({
-            output: paths.dest.out.build,
-            modules: ["Main"],
-            main: "Main"
-        });
-        errorHandler(psc);
-        return gulp.src(paths.src.concat(paths.bower))
-            .pipe(psc)
-            .pipe(gulp.dest(paths.dest.dist));
-    });
-    gulp.task(names.makeDev, function() {
+
+    gulp.task("make", function() {
         var psc = purescript.pscMake({
-            output: paths.dest.dist + "/" + paths.dest.npm
+            output: config.tmpDir + "/node_modules"
         });
         errorHandler(psc);
         return gulp.src(paths.src.concat(paths.bower).concat(paths.test))
             .pipe(psc);
     });
+    
 
-    var bundleIt = function(entry) {
-        return function() {
-            var bundler = br({
-                entries: [entry]
+    _(config.entries).mapObject(function(val, key) {
+        var name = getName(key);
+        gulp.task(
+            "prod-" + getName(key),
+            function() {
+                var psc = purescript.psc({
+                    output: getName(key) + "-prod.js",
+                    modules: [key],
+                    main: key
+                });
+                errorHandler(psc);
+                return gulp.src(paths.src.concat(paths.bower))
+                    .pipe(psc)
+                    .pipe(gulp.dest(config.tmpDir));
             });
-            var bundle = function() {
-                return bundler
-                    .bundle()
-                    .pipe(source(paths.dest.out.build))
-                    .pipe(buffer())
-                    .pipe(gulp.dest(paths.dest.dist));
-            };
-            return bundle();
-        };
-    };
+        
+        gulp.task(
+            "bundle-" +  getName(key),
+            ["entries", "make"],
+            bundleIt("./" + config.tmpDir + "/" + name + ".js",
+                     getName(key) + "-builded.js"));
 
-    gulp.task(names.bundleDev, [names.runner, names.makeDev],
-              bundleIt("./" + paths.dest.entry.build));
+        gulp.task(
+            "bundle-prod-" + getName(key),
+            ["entries", "prod-" + getName(key)],
+            bundleIt("./" + config.tmpDir + "/" + name + "-prod.js",
+                     getName(key) + "-prod-builded.js"));
+        
+        gulp.task(
+            "deploy-" + name,
+            ["entries", "bundle-" + name],
+            function() {
+                gulp.src(["./" + config.tmpDir + "/" + name + "-builded.js"])
+                    .pipe(concat(val.name + ".js"))
+                    .pipe(gulp.dest(val.dir));
+            });
+        
+        gulp.task(
+            "deploy-prod-" + name,
+            ["entries", "bundle-prod-" + name],
+            function() {
+                gulp.src(["./" + config.tmpDir + "/" + name + "-prod.js"])
+                    .pipe(concat(val.name + ".js"))
+                    .pipe(gulp.dest(val.dir));
+            });
+        gulp.task(
+            "watch-" + name,
+            ["deploy-" + name],
+            function() {
+                gulp.watch(
+                    paths.src.concat(paths.test),
+                    ["deploy-" + name]
+                );
+            });
 
-    gulp.task(names.bundleProd, [names.runner, names.makeProd],
-              bundleIt("./" + paths.dest.dist + "/" + paths.dest.out.build));
+    });
 
-    gulp.task(names.bundleTest, [names.runner, names.makeDev], function() {
+    gulp.task("compile", _(config.entries).map(function(val, key) {
+        return "prod-" + getName(key);     
+    }));
+    
+    gulp.task("bundle-prod", ["entries", "compile"], function() {
+        _(config.entries).mapObject(function(val, key) {
+            bundleIt("./" + config.tmpDir + "/" + getName(key) + "-prod.js",
+                     getName(key) + "-prod-builded.js")();
+        });
+    });
+
+    gulp.task("deploy-prod", ["bundle-prod"], function() {
+        _(config.entries).mapObject(function(val, key) {
+            gulp.src(["./" + config.tmpDir + "/" + getName(key) + "-prod-builded.js"])
+                .pipe(concat(val.name + ".js"))
+                .pipe(gulp.dest(val.dir));
+        });
+    });
+    gulp.task("bundle-test", ["entries", "make"], function() {
         var bundler = br({
-            entries: ["./" + paths.dest.entry.test]
+            entries: ["./" + config.tmpDir + "/" + "test-main.js"]
         });
         var pats = nameGetter.files(
-            paths.src, paths.dest.dist + "/" + paths.dest.npm);
+            paths.src,
+            config.tmpDir + "/node_modules"
+        );
         var bundle = function() {
             return bundler
                 .transform(istanbullify(pats), {global: true})
                 .bundle()
-                .pipe(source(paths.dest.out.test))
+                .pipe(source("test-main-builded.js"))
                 .pipe(buffer())
-                .pipe(gulp.dest(paths.dest.dist));
+                .pipe(gulp.dest(config.tmpDir));
         };
         return bundle();
     });
 
-    gulp.task(names.karma, function(cb) {
+    gulp.task("karma", ["bundle-test"], function(cb) {
         karma.start({
             configFile: __dirname + "/karma.conf.js",
             action: "run",
             singleRun: true
         }, cb);
     });
-    gulp.task(names.karmaWatch, function(cb) {
-        karma.start({
-            configFile: __dirname + "/karma.conf.js",
-            action: "run"
-        }, cb);
-    });
-
-    gulp.task(names.cover, [names.karma], function() {
+    gulp.task("cover", ["karma"], function() {
         gulp.src("../../coverage/**/lcov.info")
             .pipe(coveralls());
     });
-    gulp.task(names.concatBuild, function() {
-        gulp.src(paths.concat.concat([paths.dest.dist + "/" + paths.dest.out.build]))
-            .pipe(concat(paths.dest.out.concated))
-            .pipe(gulp.dest(paths.dest.public));
-    });
 
-
-    gulp.task(names.test, [names.copyNpm], function(cb) {
-        sequence(names.bundleTest, names.cover, cb);
-    });
-    gulp.task(names.prod, [names.copyNpm, names.bundleProd, names.concatBuild]);
-
-    gulp.task(names.watchDev, function() {
+    
+    gulp.task("watch-test", ["bundle-test"], function() {
         gulp.watch(
             paths.src.concat(paths.test),
-            [names.bundleDev]
+            ["bundle-test"]
         );
     });
-    gulp.task(names.watchTest, function() {
-        gulp.watch(
-            paths.src.concat(paths.test),
-            [names.bundleTest]
-        );
-    });
-    gulp.task(names.dev, [
-        names.copyNpm,
-        names.bundleDev,
-        names.concatBuild,
-        names.serve,
-        names.watchDev
-    ]);
-
-    gulp.task(names.tdd, [
-        names.copyNpm,
-        names.bundleTest,
-        names.serve,
-        names.watchTest
-    ]);
-              
 }
 
-module.exports = {
-    names: defaults.names,
-    paths: defaults.paths,
-    define: defineTasks
-};
-
-
+module.exports = defineTasks;
