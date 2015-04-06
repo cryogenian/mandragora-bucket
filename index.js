@@ -3,7 +3,7 @@ var fs = require("fs"),
     _ = require("underscore"),
     purescript = require("gulp-purescript"),
     concat = require("gulp-concat"),
-    sequence = require("run-sequence"),
+
     coveralls = require("gulp-coveralls"),
     br = require("browserify"),
     source = require("vinyl-source-stream"),
@@ -26,6 +26,7 @@ function defineTasks(gulp, config) {
                     entries: [entry]
                 });
                 var bundle = function() {
+                    console.log("!");
                     return bundler
                         .bundle()
                         .pipe(source(target))
@@ -134,48 +135,27 @@ function defineTasks(gulp, config) {
                     ["deploy-" + name]
                 );
             });
+
     });
 
     gulp.task("compile", _(config.entries).map(function(val, key) {
         return "prod-" + getName(key);     
     }));
     
-    gulp.task("bundle-dev", ["entries", "make"], function() {
-        _(config.entries).mapObject(function(val, key) {
-            bundleIt("./" + config.tmpDir + "/" + getName(key) + ".js",
-                     getName(key) + "-builded.js")();
-        });
-    });
-
     gulp.task("bundle-prod", ["entries", "compile"], function() {
         _(config.entries).mapObject(function(val, key) {
             bundleIt("./" + config.tmpDir + "/" + getName(key) + "-prod.js",
                      getName(key) + "-prod-builded.js")();
         });
     });
-    gulp.task("deploy-dev", ["bundle-dev"], function() {
-        _(config.entries).mapObject(function(val, key) {
-            gulp.src(["./" + config.tmpDir + "/" + getName(key) + "-builded.js"])
-                .pipe(concat(val.name + ".js"))
-                .pipe(gulp.dest(val.dir));
-        });
-    });
 
     gulp.task("deploy-prod", ["bundle-prod"], function() {
         _(config.entries).mapObject(function(val, key) {
             gulp.src(["./" + config.tmpDir + "/" + getName(key) + "-prod-builded.js"])
-                          .pipe(concat(val.name + ".js"))
-                          .pipe(gulp.dest(val.dir));
+                .pipe(concat(val.name + ".js"))
+                .pipe(gulp.dest(val.dir));
         });
     });
-
-    gulp.task("watch-dev", ["deploy-dev"], function() {
-        gulp.watch(
-            paths.src.concat(paths.test),
-            ["deploy-dev"]
-        );
-    });
-    
     gulp.task("bundle-test", ["entries", "make"], function() {
         var bundler = br({
             entries: ["./" + config.tmpDir + "/" + "test-main.js"]
@@ -217,5 +197,3 @@ function defineTasks(gulp, config) {
 }
 
 module.exports = defineTasks;
-
-
