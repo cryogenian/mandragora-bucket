@@ -10,7 +10,6 @@ var fs = require("fs"),
     buffer = require("vinyl-buffer"),
     karma = require("karma").server;
 
-
 var entryFactory = require("./lib/entry-factory.js"),
     errorHandler = require("./lib/handle-error.js"),
     nameGetter = require("./lib/get-names.js"),
