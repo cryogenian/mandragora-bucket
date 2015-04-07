@@ -205,7 +205,10 @@ var defaultConfig = {
       'bower_components/purescript-*/purescript-*/src/**/*.purs'
     ],
     src: ['src/**/*.purs'],
-    test: ['test/**/*.purs']
+    test: ['test/**/*.purs'],
+    docs: {
+      dest: 'MODULES.md'
+    }
   },
   tmpDir: 'dist'
 };
@@ -213,5 +216,3 @@ var defaultConfig = {
 
 module.exports = defineTasks;
 module.exports.config = defaultConfig;
-
-
