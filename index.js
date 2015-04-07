@@ -18,6 +18,9 @@ var entryFactory = require("./lib/entry-factory.js"),
 
 
 function defineTasks(gulp, config) {
+    if (typeof config === 'undefined') {
+        config = defineTasks.config;
+    }
     var paths = config.paths,
         bundleIt = function(entry, target) {
             return function() {
@@ -195,4 +198,20 @@ function defineTasks(gulp, config) {
     });
 }
 
+var defaultConfig = {
+  paths: {
+    bower: [
+      'bower_components/purescript-*/src/**/*.purs',
+      'bower_components/purescript-*/purescript-*/src/**/*.purs'
+    ],
+    src: ['src/**/*.purs'],
+    test: ['test/**/*.purs']
+  },
+  tmpDir: 'dist'
+};
+
+
 module.exports = defineTasks;
+module.exports.config = defaultConfig;
+
+
