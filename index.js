@@ -1,4 +1,5 @@
 var fs = require("fs"),
+    child_process = require("child_process"),
     path = require("path"),
     _ = require("underscore"),
     purescript = require("gulp-purescript"),
@@ -18,6 +19,9 @@ var entryFactory = require("./lib/entry-factory.js"),
 
 
 function defineTasks(gulp, config) {
+    if (process.platform === "darwin") {
+        child_process.execSync("ulimit -n 2560");
+    }
     if (typeof config === 'undefined') {
         config = defineTasks.config;
     }
@@ -212,6 +216,7 @@ var defaultConfig = {
   },
   tmpDir: 'dist'
 };
+
 
 
 module.exports = defineTasks;
