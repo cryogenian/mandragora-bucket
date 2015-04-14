@@ -5,7 +5,7 @@ module.exports = function(config) {
       reporters: ["progress", "coverage"],
       logLevel: config.LOG_INFO,
       files: [
-          "../../tmp/test-main-builded.js"
+          "../../dist/test-main-builded.js"
 
       ],
       browserNoActivityTimeout: 300000,
