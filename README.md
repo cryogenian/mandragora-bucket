@@ -42,7 +42,7 @@ root
 
 ### default config
 
-```json
+```javascript
 {
   paths: {
     bower: [
@@ -67,7 +67,7 @@ tasks.
 
 ### minimal user config
 
-```json
+```javascript
 {
     entries: {
         "Main": {
