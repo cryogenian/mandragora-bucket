@@ -142,7 +142,7 @@ following tasks:
 
 * `gulp bundle-test` -- psc-make `Test.Main` entry and cover all file from **src** with istanbul
 * `gulp karma` -- run tests in `karma`
-* `gulp cover` -- run tests in `karma` and send statictics to `coveralls
+* `gulp cover` -- run tests in `karma` and send statictics to `coveralls`
 * `gulp watch-test` -- watch test and project sources, recompile it by `gulp bundle-test`
 
 For each of entry in `config.entries` i.e.
