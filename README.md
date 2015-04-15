@@ -17,8 +17,8 @@ all needs of **purescript** project.
 * bundle `psc-make`d or `psc`ed  projects with **browserify**
 * test projects with **karma** and check coverage with **istanbul** 
 * manage projects that have multiple entry points.
-* watching `psc-make` and `karma` builds
-* producing docs
+* watch `psc-make` and `karma` builds
+* produce docs
 
 ## How to use it
 
