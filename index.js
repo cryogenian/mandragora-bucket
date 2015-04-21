@@ -113,7 +113,7 @@ function defineTasks(gulp, config) {
     gulp.task("deploy-prod-" + name,
       ["bundle-prod-" + name],
       function() {
-        return gulp.src(["./" + config.tmpDir + "/" + name + "-prod.js"])
+        return gulp.src(["./" + config.tmpDir + "/" + name + "-prod-builded.js"])
           .pipe(plumber())
           .pipe(concat(val.name + ".js"))
           .pipe(gulp.dest(val.dir));
