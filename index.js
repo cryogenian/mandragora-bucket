@@ -33,7 +33,6 @@ function defineTasks(gulp, config) {
 
   var bundleIt = function(entry, target) {
     return function() {
-      // console.log(entry, fs.readFileSync(entry).length);
       return browserify({ entries: [entry] })
         .bundle()
         .pipe(plumber())
