@@ -8,9 +8,13 @@ var fs = require("fs"),
 
   coveralls = require("gulp-coveralls"),
   browserify = require("browserify"),
+  watchify = require("watchify"),
   source = require("vinyl-source-stream"),
   buffer = require("vinyl-buffer"),
   karma = require("karma").server,
+  gutil = require("gulp-util"),
+  watch = require("gulp-watch"),
+  chalk = require("chalk"),
 
   entryFactory = require("./lib/entry-factory.js"),
   nameGetter = require("./lib/get-names.js"),
@@ -109,19 +113,33 @@ function defineTasks(gulp, config) {
     gulp.task("deploy-prod-" + name,
       ["bundle-prod-" + name],
       function() {
-        console.log("fuoy", name);
         return gulp.src(["./" + config.tmpDir + "/" + name + "-prod.js"])
           .pipe(plumber())
           .pipe(concat(val.name + ".js"))
           .pipe(gulp.dest(val.dir));
       });
 
-    gulp.task("watch-" + name,
-      ["deploy-" + name],
-      function() {
-        gulp.watch(_.flatten([paths.src, paths.test]), ["deploy-" + name]);
-      });
+    var bundler = watchify(browserify("./" + config.tmpDir + "/" + name + ".js", watchify.args));
+    var bundle = function() {
+      var filename = chalk.magenta(val.dir + "/" + val.name + ".js");
+      gutil.log("Browserify bundling " + filename + "...");
+      return bundler.bundle()
+        .on("error", gutil.log.bind(gutil, "Browserify error bundling " + filename))
+        .pipe(source(val.name + ".js"))
+        .pipe(gulp.dest("./" + val.dir))
+        .on("end", gutil.log.bind(gutil, "Browserify bundle " + filename + " updated"));
+    };
+    bundler.on("update", bundle);
 
+    gulp.task("watch-bundle-" + name, ["entry-" + name, "make"], bundle);
+
+    gulp.task("watch-" + name,
+      ["watch-bundle-" + name],
+      function() {
+        watch(_.flatten([paths.src, paths.test]), function () {
+          gulp.start("make");
+        });
+      });
   });
 
   var entryNames = _.keys(config.entries).map(getName);
