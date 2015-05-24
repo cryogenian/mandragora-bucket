@@ -129,15 +129,18 @@ function defineTasks(gulp, config) {
         .pipe(gulp.dest("./" + val.dir))
         .on("end", gutil.log.bind(gutil, "Browserify bundle " + filename + " updated"));
     };
-    bundler.on("update", bundle);
 
     gulp.task("watch-bundle-" + name, ["entry-" + name, "make"], bundle);
+
+    gulp.task("make-bundle-" + name, ["make"], function () {
+      return bundle();
+    });
 
     gulp.task("watch-" + name,
       ["watch-bundle-" + name],
       function() {
         watch(_.flatten([paths.src, paths.test]), function () {
-          gulp.start("make");
+          gulp.start("make-bundle-" + name);
         });
       });
   });
